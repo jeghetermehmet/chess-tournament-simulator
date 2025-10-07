@@ -84,7 +84,6 @@ class ChessPlayer:
         self.theoretical_preparation = random.randint(0, 100)
         self.memorization            = random.randint(0, 100)
         self.engine_usage            = random.randint(0, 100)
-        self.training_hours_per_week = random.randint(0, 100)
 
         # --- Physical & environmental
         self.stamina                 = random.randint(0, 100)
@@ -94,9 +93,11 @@ class ChessPlayer:
 
         # --- Career & experience
         self.experience_years    = random.randint(0, 30)
-        self.titles              = random.choice(["None", "CM", "FM", "IM", "GM"])
-        self.reputation_pressure = random.randint(0, 100)
         self.learning_curve      = random.randint(0, 100)
+
+        # --- Derived categorizations
+        self.category_scores = self._calculate_category_scores()
+        self.primary_category = max(self.category_scores, key=self.category_scores.get)
 
     def overall_strength(self):
         """Aggregate rating across categories (rough draft weighting)."""
@@ -117,10 +118,51 @@ class ChessPlayer:
                        self.engine_usage) / 3
         physical = (self.stamina + self.health + self.sleep_quality +
                     self.environmental_adaptation) / 4
-        career = (self.experience_years * 3) + (20 if self.titles in ["IM", "GM"] else 0)
+        career = (self.experience_years * 3) + self.learning_curve
 
         return round((tactical + basic + combos + strategic + practical +
                       psychological + style + preparation + physical + career) / 10, 2)
+
+    def _calculate_category_scores(self):
+        """Group the player's strengths into broad chess skill categories."""
+        tactics_average = sum(self.tactics.values()) / len(self.tactics)
+        combo_average = sum(self.combo_strengths.values()) / len(self.combo_strengths)
+        practical_average = (self.time_management + self.resourcefulness +
+                              self.psychological_resilience + self.form) / 4
+        psychological_average = (self.risk_taking + self.confidence +
+                                  self.tilt_resistance + self.focus_span + self.consistency) / 5
+        physical_average = (self.stamina + self.health + self.sleep_quality +
+                             self.environmental_adaptation) / 4
+        experience_factor = min(100, self.experience_years * 3)
+        growth_factor = self.growth_potential
+        age_factor = max(0, min(100, 100 - abs(30 - (self.age or 30)) * 2))
+
+        opening_score = (self.opening_knowledge + self.theoretical_preparation +
+                          self.memorization + self.engine_usage + self.pawn_strength +
+                          self.bishop_strength + self.knight_strength + growth_factor) / 8
+
+        middlegame_score = (self.middlegame_strategy + self.positional_understanding +
+                             self.attack_orientation + self.defensive_skill +
+                             self.calculation_depth + self.creativity + combo_average +
+                             self.evaluation_accuracy) / 8
+
+        endgame_score = (self.endgame_strength + self.king_safety_awareness +
+                          self.rook_strength + self.queen_strength + self.resourcefulness +
+                          self.psychological_resilience + experience_factor) / 7
+
+        tactics_score = (tactics_average + self.calculation_depth + self.attack_orientation +
+                          combo_average + self.creativity) / 5
+
+        other_score = (practical_average + psychological_average + physical_average +
+                        self.learning_curve + age_factor) / 5
+
+        return {
+            "opening": round(opening_score, 2),
+            "middlegame": round(middlegame_score, 2),
+            "endgame": round(endgame_score, 2),
+            "tactics": round(tactics_score, 2),
+            "other": round(other_score, 2),
+        }
 
 # Example usage
 player = ChessPlayer("All-Rounder", age=28)
